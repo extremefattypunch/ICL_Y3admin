@@ -556,8 +556,8 @@ function displayStoredDataResults(results) {
         if (results.estimatedGrade !== null) {
             html += `
                 <div class="estimated-box">
-                    <h4>📊 To Achieve Your Target</h4>
-                    <p>All missing assessments should average:</p>
+                    <h4>📊 Minimum Required for Missing Assignments</h4>
+                    <p>Minimum average needed across all missing assignments:</p>
                     <div class="estimated-value">${results.estimatedGrade}/100</div>
                     <p>This will help you reach a final year grade of ${results.targetGrade.toFixed(2)}</p>
                 </div>

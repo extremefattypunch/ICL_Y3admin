@@ -26,12 +26,12 @@
             <div class="menu-container">
                 <div class="menu-item">
                     <h2>📊 Input Your Grades</h2>
-                    <p>Enter your assessment marks and calculate your final grade with target analysis</p>
+                    <p>Enter only the marks you already know. You can leave unknown assessments blank and still calculate your progress.</p>
                     <button onclick="switchPage('input')" class="btn btn-primary">Start</button>
                 </div>
                 <div class="menu-item">
                     <h2>📈 View Results</h2>
-                    <p>See saved grades, current progress, and estimated grades for missing assessments</p>
+                    <p>See saved grades, current progress, and at the bottom the minimum average needed across missing assignments to hit your target.</p>
                     <button onclick="switchPage('stored')" class="btn btn-primary">View</button>
                 </div>
                 <div class="menu-item">
@@ -46,7 +46,7 @@
         <section id="input" class="page">
             <div class="page-header">
                 <h2>Input Your Grades</h2>
-                <p class="page-description">Enter grades below. Use the sticky action bar to calculate and jump straight to the results page.</p>
+                <p class="page-description">Only fill in grades you already have. Leave unknown assessments blank, then use the sticky action bar to calculate and jump straight to results.</p>
             </div>
 
             <div id="inputForm" class="grades-form">
@@ -68,6 +68,7 @@
         <section id="stored" class="page">
             <div class="page-header">
                 <h2>View Results</h2>
+                <p class="page-description">If some assessments are missing, the bottom section shows the minimum average required across all missing assignments to reach your target.</p>
                 <div class="form-group">
                     <label for="storedTargetGrade">Target Final Year Grade (default 77):</label>
                     <input type="number" id="storedTargetGrade" min="0" max="100" value="77" step="1">
