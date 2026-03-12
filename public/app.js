@@ -1,6 +1,46 @@
 // Global variables
 let modulesData = [];
 let configData = null;
+const EDITOR_DRAFT_STORAGE_KEY = 'iclEditorDraftConfig';
+
+function getSavedGradesFromStorage() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem('iclSavedGrades') || '{}');
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (error) {
+        return {};
+    }
+}
+
+function setSavedGradeInStorage(key, value) {
+    const savedGrades = getSavedGradesFromStorage();
+    if (value === null || value === undefined || value === '') {
+        savedGrades[key] = null;
+    } else {
+        savedGrades[key] = value;
+    }
+    localStorage.setItem('iclSavedGrades', JSON.stringify(savedGrades));
+}
+
+function getEditorDraftFromStorage() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(EDITOR_DRAFT_STORAGE_KEY) || 'null');
+        if (!parsed || typeof parsed !== 'object') return null;
+        if (!Array.isArray(parsed.modules)) return null;
+        return parsed;
+    } catch (error) {
+        return null;
+    }
+}
+
+function saveEditorDraftToStorage() {
+    if (!configData || !Array.isArray(configData.modules)) return;
+    localStorage.setItem(EDITOR_DRAFT_STORAGE_KEY, JSON.stringify(configData));
+}
+
+function clearEditorDraftFromStorage() {
+    localStorage.removeItem(EDITOR_DRAFT_STORAGE_KEY);
+}
 
 // Initialize app on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -71,7 +111,8 @@ function loadConfigEditor() {
     fetch('/api/config')
         .then(response => response.json())
         .then(data => {
-            configData = data;
+            const editorDraft = getEditorDraftFromStorage();
+            configData = editorDraft || data;
             renderConfigEditor();
         })
         .catch(error => {
@@ -254,6 +295,7 @@ function updateModuleField(moduleIndex, field, value) {
     configData.modules[moduleIndex][field] = numericFields.includes(field)
         ? (value === '' ? 0 : parseFloat(value))
         : value;
+    saveEditorDraftToStorage();
     renderConfigEditor();
 }
 
@@ -266,6 +308,7 @@ function updateAssessmentField(moduleIndex, assessmentIndex, field, value) {
     } else {
         configData.modules[moduleIndex].assessments[assessmentIndex][field] = value;
     }
+    saveEditorDraftToStorage();
     renderConfigEditor();
 }
 
@@ -290,12 +333,14 @@ function addModule() {
         ]
     });
 
+    saveEditorDraftToStorage();
     renderConfigEditor();
 }
 
 function removeModule(moduleIndex) {
     if (!configData) return;
     configData.modules.splice(moduleIndex, 1);
+    saveEditorDraftToStorage();
     renderConfigEditor();
 }
 
@@ -307,12 +352,14 @@ function addAssessment(moduleIndex) {
         description: '',
         grade: null
     });
+    saveEditorDraftToStorage();
     renderConfigEditor();
 }
 
 function removeAssessment(moduleIndex, assessmentIndex) {
     if (!configData) return;
     configData.modules[moduleIndex].assessments.splice(assessmentIndex, 1);
+    saveEditorDraftToStorage();
     renderConfigEditor();
 }
 
@@ -340,6 +387,7 @@ function saveConfig() {
     })
     .then(data => {
         configData = data.data;
+        clearEditorDraftFromStorage();
         setEditorStatus('Data saved successfully.', 'success');
         renderConfigEditor();
         loadModules();
@@ -354,6 +402,7 @@ function saveConfig() {
 // Render input form with all modules and assessments
 function renderInputForm() {
     const formContainer = document.getElementById('inputForm');
+    const savedGrades = getSavedGradesFromStorage();
     let html = buildModuleWeightWarningHtml(
         modulesData.moduleWeightTotal,
         modulesData.moduleWeightWarning
@@ -380,7 +429,11 @@ function renderInputForm() {
         `;
 
         module.assessments.forEach((assessment, idx) => {
-            const existingGrade = assessment.grade !== null && assessment.grade !== undefined ? assessment.grade : '';
+            const gradeKey = `${module.code}_${idx}`;
+            const storedGrade = savedGrades[gradeKey];
+            const existingGrade = storedGrade !== null && storedGrade !== undefined
+                ? storedGrade
+                : (assessment.grade !== null && assessment.grade !== undefined ? assessment.grade : '');
             html += `
                 <div class="assessment-group">
                     <div class="assessment-label">
@@ -405,6 +458,27 @@ function renderInputForm() {
     });
 
     formContainer.innerHTML = html;
+
+    modulesData.forEach(module => {
+        module.assessments.forEach((assessment, idx) => {
+            const inputId = `grade_${module.code}_${idx}`;
+            const inputElement = document.getElementById(inputId);
+            if (!inputElement) return;
+
+            inputElement.addEventListener('change', function() {
+                const rawValue = this.value.trim();
+                if (rawValue === '') {
+                    setSavedGradeInStorage(`${module.code}_${idx}`, null);
+                    return;
+                }
+
+                const parsed = parseFloat(rawValue);
+                if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+                    setSavedGradeInStorage(`${module.code}_${idx}`, parsed);
+                }
+            });
+        });
+    });
 }
 
 // Submit grades and calculate results
