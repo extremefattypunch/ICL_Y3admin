@@ -523,8 +523,8 @@ header .subtitle {
 }
 
 .calc-equation {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    margin-top: 6px;
+    margin-top: 8px;
+    overflow-x: auto;
 }
 
 .estimated-value {
