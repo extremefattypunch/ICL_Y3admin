@@ -1,0 +1,213 @@
+{
+  "year": "2025-26",
+  "total_ects": 75,
+  "modules": [
+    {
+      "module_code": "BIOE60012",
+      "title": "Foundations of Synthetic Biology",
+      "ects": 5,
+      "module_weight": 9.1,
+      "pass_mark": 40,
+      "assessments": [
+        {
+          "assessment_name": "Written exam",
+          "assessment_weight": 67,
+          "description": "Main exam",
+          "grade": null
+        },
+        {
+          "assessment_name": "Written report",
+          "assessment_weight": 33,
+          "description": "Experimental lab report",
+          "grade": null
+        }
+      ]
+    },
+    {
+      "module_code": "BIOE60005",
+      "title": "Bioengineering Group Project",
+      "ects": 20,
+      "module_weight": 36.3,
+      "pass_mark": 40,
+      "assessments": [
+        {
+          "assessment_name": "Written report",
+          "assessment_weight": 0,
+          "description": "Literature mind map",
+          "grade": 78
+        },
+        {
+          "assessment_name": "Written report",
+          "assessment_weight": 20,
+          "description": "Literature highlights",
+          "grade": 73
+        },
+        {
+          "assessment_name": "Presentation",
+          "assessment_weight": 15,
+          "description": "Project pitch",
+          "grade": null
+        },
+        {
+          "assessment_name": "Written report",
+          "assessment_weight": 50,
+          "description": "Final report",
+          "grade": null
+        },
+        {
+          "assessment_name": "Other",
+          "assessment_weight": 15,
+          "description": "Brochure pitch",
+          "grade": null
+        }
+      ]
+    },
+    {
+      "module_code": "BIOE60003",
+      "title": "Biomedical Instrumentation",
+      "ects": 5,
+      "module_weight": 9.1,
+      "pass_mark": 40,
+      "assessments": [
+        {
+          "assessment_name": "Written exam",
+          "assessment_weight": 50,
+          "description": "Main exam",
+          "grade": null
+        },
+        {
+          "assessment_name": "Written report",
+          "assessment_weight": 50,
+          "description": "Impedometric respirometer lab report",
+          "grade": null
+        }
+      ]
+    },
+    {
+      "module_code": "BIOE60006",
+      "title": "Digital Biosignal Processing",
+      "ects": 5,
+      "module_weight": 9.1,
+      "pass_mark": 40,
+      "assessments": [
+        {
+          "assessment_name": "Written exam",
+          "assessment_weight": 82,
+          "description": "Main exam",
+          "grade": 70
+        },
+        {
+          "assessment_name": "Lab report",
+          "assessment_weight": 18,
+          "description": "Lab exercises",
+          "grade": 96
+        }
+      ]
+    },
+    {
+      "module_code": "BIOE60008",
+      "title": "Image Processing",
+      "ects": 5,
+      "module_weight": 9.1,
+      "pass_mark": 40,
+      "assessments": [
+        {
+          "assessment_name": "Written exam",
+          "assessment_weight": 80,
+          "description": "Main exam",
+          "grade": null
+        },
+        {
+          "assessment_name": "Quiz",
+          "assessment_weight": 20,
+          "description": "Quiz",
+          "grade": null
+        }
+      ]
+    },
+    {
+      "module_code": "BIOE60011",
+      "title": "Probability, Statistics and Data Analysis",
+      "ects": 5,
+      "module_weight": 9.1,
+      "pass_mark": 40,
+      "assessments": [
+        {
+          "assessment_name": "Written exam",
+          "assessment_weight": 80,
+          "description": "Main exam",
+          "grade": null
+        },
+        {
+          "assessment_name": "Problem sheet",
+          "assessment_weight": 20,
+          "description": "Matlab assignment",
+          "grade": 71
+        }
+      ]
+    },
+    {
+      "module_code": "BIOE60024",
+      "title": "Modelling in Biology",
+      "ects": 5,
+      "module_weight": 9.1,
+      "pass_mark": 40,
+      "assessments": [
+        {
+          "assessment_name": "Written exam",
+          "assessment_weight": 80,
+          "description": "Part 1: Deterministic Nonlinear Dynamics",
+          "grade": 100
+        },
+        {
+          "assessment_name": "Problem sheet",
+          "assessment_weight": 10,
+          "description": "Part 2: Stochastic Processes and Networks",
+          "grade": 100
+        },
+        {
+          "assessment_name": "Problem sheet",
+          "assessment_weight": 10,
+          "description": "Part 3",
+          "grade": null
+        }
+      ]
+    },
+    {
+      "module_code": "I-EXPLORE",
+      "title": "I-Explore",
+      "ects": 5,
+      "module_weight": 0,
+      "pass_mark": "pass/fail",
+      "assessments": [
+        {
+          "assessment_name": "Pass/Fail",
+          "assessment_weight": 100,
+          "description": "Set by I-Explore",
+          "grade": 100
+        }
+      ]
+    },
+    {
+      "module_code": "BIOE7005 ",
+      "title": "Cellular and Molecular Mechanotransduction",
+      "ects": 5,
+      "module_weight": 9.1,
+      "pass_mark": 50,
+      "assessments": [
+        {
+          "assessment_name": "Written report",
+          "assessment_weight": 20,
+          "description": "Journal club",
+          "grade": 67
+        },
+        {
+          "assessment_name": "Written exam",
+          "assessment_weight": 80,
+          "description": "Main exam",
+          "grade": 70
+        }
+      ]
+    }
+  ]
+}

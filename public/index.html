@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICL Y3 Grade Calculator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ICL Y3 Grade Calculator</h1>
+            <p class="subtitle">Imperial College London - Bioengineering</p>
+        </header>
+
+        <nav class="main-nav">
+            <button class="nav-btn active" data-page="menu">Menu</button>
+            <button class="nav-btn" data-page="input">Input Grades</button>
+            <button class="nav-btn" data-page="stored">View Results</button>
+        </nav>
+
+        <!-- Menu Page -->
+        <section id="menu" class="page active">
+            <div class="menu-container">
+                <div class="menu-item">
+                    <h2>📊 Input Your Grades</h2>
+                    <p>Enter your assessment marks and calculate your final grade with target analysis</p>
+                    <button onclick="switchPage('input')" class="btn btn-primary">Start</button>
+                </div>
+                <div class="menu-item">
+                    <h2>📈 View Results</h2>
+                    <p>See saved grades, current progress, and estimated grades for missing assessments</p>
+                    <button onclick="switchPage('stored')" class="btn btn-primary">View</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Input Grades Page -->
+        <section id="input" class="page">
+            <div class="page-header">
+                <h2>Input Your Grades</h2>
+                <p class="page-description">Enter grades below. Use the sticky action bar to calculate and jump straight to the results page.</p>
+            </div>
+
+            <div id="inputForm" class="grades-form">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div class="action-bar">
+                <div class="action-bar-content">
+                    <div class="form-group action-bar-field">
+                        <label for="targetGradeInput">Desired Overall Year Grade:</label>
+                        <input type="number" id="targetGradeInput" min="0" max="100" value="70" step="1">
+                    </div>
+                    <button onclick="submitGrades()" class="btn btn-success action-bar-btn">Calculate Results</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stored Data Page -->
+        <section id="stored" class="page">
+            <div class="page-header">
+                <h2>View Results</h2>
+                <div class="form-group">
+                    <label for="storedTargetGrade">Target Grade (default 76):</label>
+                    <input type="number" id="storedTargetGrade" min="0" max="100" value="76" step="1">
+                </div>
+                <button onclick="loadStoredData()" class="btn btn-success">Refresh</button>
+            </div>
+
+            <div id="storedResults" class="results-container">
+                <!-- Results displayed here -->
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>&copy; 2025-26 ICL Bioengineering | Grade Calculator v1.0</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
