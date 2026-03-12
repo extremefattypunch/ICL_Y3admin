@@ -666,6 +666,21 @@ function loadStoredData() {
     });
 }
 
+function toggleMinimumGradeInfo() {
+    const panel = document.getElementById('minimumGradeInfoPanel');
+    const button = document.getElementById('minimumGradeInfoToggle');
+    if (!panel || !button) return;
+
+    const isHidden = panel.hasAttribute('hidden');
+    if (isHidden) {
+        panel.removeAttribute('hidden');
+        button.setAttribute('aria-expanded', 'true');
+    } else {
+        panel.setAttribute('hidden', 'hidden');
+        button.setAttribute('aria-expanded', 'false');
+    }
+}
+
 // Display stored data results
 function displayStoredDataResults(results) {
     const resultsDiv = document.getElementById('storedResults');
@@ -758,9 +773,41 @@ function displayStoredDataResults(results) {
         if (results.estimatedGrade !== null) {
             html += `
                 <div class="estimated-box">
-                    <h4>📊 Minimum Required for Missing Assignments</h4>
-                    <p>Minimum average needed across all missing assignments:</p>
+                    <div class="estimated-header">
+                        <h4>📊 Minimum Required for Missing Assessments</h4>
+                        <button
+                            id="minimumGradeInfoToggle"
+                            class="info-toggle"
+                            type="button"
+                            onclick="toggleMinimumGradeInfo()"
+                            aria-expanded="false"
+                            title="Show calculation details"
+                        >ⓘ</button>
+                    </div>
+                    <p>Minimum average needed across all missing assessments:</p>
                     <div class="estimated-value">${results.estimatedGrade}/100</div>
+                    <div id="minimumGradeInfoPanel" class="calc-info-panel" hidden>
+                        <p><strong>How this is calculated (exactly):</strong></p>
+                        <p>
+                            The app tries every integer grade from 0 to 100, sets <strong>all missing assessments</strong>
+                            to that same trial grade, and computes the final year score each time.
+                            The first grade that reaches your target is shown as the minimum required average.
+                        </p>
+                        <p class="calc-equation">
+                            S_m(g) = Σ(w_known × grade_known / 100) + Σ(w_missing × g / 100)
+                        </p>
+                        <p class="calc-equation">
+                            F(g) = Σ(ModuleWeight_m / 100 × S_m(g))
+                        </p>
+                        <p class="calc-equation">
+                            Choose smallest integer g in [0,100] such that F(g) ≥ Target − 0.01
+                        </p>
+                        <p><strong>Sample:</strong> If target is 77, known completed contribution is 42.6 points,
+                            and missing assessments together contribute 45% of the final-year weighting:</p>
+                        <p class="calc-equation">F(g) = 42.6 + 0.45g</p>
+                        <p class="calc-equation">42.6 + 0.45g ≥ 77 ⇒ g ≥ 76.44</p>
+                        <p class="calc-equation">Minimum integer required average = 77</p>
+                    </div>
                     <p>This will help you reach a final year grade of ${results.targetGrade.toFixed(2)}</p>
                 </div>
             `;

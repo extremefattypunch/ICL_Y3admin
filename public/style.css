@@ -489,6 +489,44 @@ header .subtitle {
     margin-bottom: 10px;
 }
 
+.estimated-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.info-toggle {
+    border: 1px solid var(--warning-color);
+    background: white;
+    color: var(--warning-color);
+    border-radius: 999px;
+    width: 28px;
+    height: 28px;
+    line-height: 1;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.info-toggle:hover {
+    background: rgba(245, 158, 11, 0.12);
+}
+
+.calc-info-panel {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--text-dark);
+}
+
+.calc-equation {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    margin-top: 6px;
+}
+
 .estimated-value {
     font-size: 2em;
     font-weight: bold;
