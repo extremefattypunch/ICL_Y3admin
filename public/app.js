@@ -807,7 +807,7 @@ function displayStoredDataResults(results) {
                         <p><strong>Sample calculation:</strong></p>
                         <p>Use two modules with explicit bracketed module-weight terms:</p>
                         <p class="calc-equation">$$F(g)=\\left[\\frac{W_1}{100}S_1(g)\\right]+\\left[\\frac{W_2}{100}S_2(g)\\right]$$</p>
-                        <p>Let \\(W_1=60\\), \\(W_2=40\\), and desired final year grade \\(=77\\).</p>
+                        <p>Here, \\(W_1\\) is the module weight percentage of Module 1 and \\(W_2\\) is the module weight percentage of Module 2. In this sample, \\(W_1=60\\), \\(W_2=40\\), and desired final year grade \\(=77\\).</p>
                         <p>Module 1: known assessments contribute \\(50\\%\\) at grade \\(72\\), missing assessments contribute \\(50\\%\\) at trial grade \\(g\\):</p>
                         <p class="calc-equation">$$S_1(g)=\\left[\\frac{50}{100}\\cdot72\\right]+\\left[\\frac{50}{100}\\cdot g\\right]=36+0.5g$$</p>
                         <p>Module 2: known assessments contribute \\(70\\%\\) at grade \\(68\\), missing assessments contribute \\(30\\%\\) at trial grade \\(g\\):</p>
