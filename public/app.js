@@ -798,17 +798,19 @@ function displayStoredDataResults(results) {
                             <li><strong>\\(W_m\\)</strong>: module weight percentage for module \\(m\\).</li>
                             <li><strong>\\(w_{m,k}\\)</strong>: assessment weight percentage for assessment \\(k\\) inside module \\(m\\).</li>
                             <li><strong>\\(a_{m,k}\\)</strong>: known assessment grade percentage for assessment \\(k\\) in module \\(m\\).</li>
+                            <li><strong>\\(K_m\\)</strong>: set of assessments in module \\(m\\) that already have known grades.</li>
+                            <li><strong>\\(M_m\\)</strong>: set of assessments in module \\(m\\) that are missing grades.</li>
                             <li><strong>\\(S_m(g)\\)</strong>: module grade percentage for module \\(m\\), after replacing missing assessments by \\(g\\).</li>
-                            <li><strong>\\(F(g)\\)</strong>: final year grade percentage from all module grades and module weights.</li>
+                            <li><strong>\\(F(g)\\)</strong>: final year grade percentage from all module grades and module weights. Here \\(F(g)\\) means “function \\(F\\) evaluated at \\(g\\)” (not multiplication like \\(F\\cdot g\\)).</li>
                         </ul>
                         <p class="calc-equation">$$S_m(g)=\\sum_{k\\in K_m}\\left(\\frac{w_{m,k}}{100}a_{m,k}\\right)+\\sum_{k\\in M_m}\\left(\\frac{w_{m,k}}{100}g\\right)$$</p>
                         <p class="calc-equation">$$F(g)=\\sum_m\\left(\\frac{W_m}{100}S_m(g)\\right)$$</p>
                         <p class="calc-equation">$$g^*=\\min\\left\\{g\\in\\{0,1,2,\\ldots,100\\}:F(g)\\ge target\\_grade-0.01\\right\\}$$</p>
                         <p class="calc-equation">$$\\text{Not possible}\\iff\\left\\{g\\in\\{0,1,2,\\ldots,100\\}:F(g)\\ge target\\_grade-0.01\\right\\}=\\varnothing$$</p>
-                        <p class="calc-equation">$$\\text{Equivalent check: if }F(100)<target\\_grade-0.01\\text{, then no possible }g\\text{ exists.}$$</p>
+                        <p class="calc-equation">$$\\text{Equivalent check: if }F(100)\\lt target\\_grade-0.01\\text{, then no possible }g\\text{ exists.}$$</p>
                         <p>If this happens, you are informed with the red message that the target grade is not achievable even with perfect grades on missing assessments.</p>
                         <p><strong>Sample calculation:</strong></p>
-                        <p>Use two modules with explicit bracketed module-weight terms:</p>
+                        <p>Use two modules with module-weight terms:</p>
                         <p class="calc-equation">$$F(g)=\\left[\\frac{W_1}{100}S_1(g)\\right]+\\left[\\frac{W_2}{100}S_2(g)\\right]$$</p>
                         <p>Here, \\(W_1\\) is the module weight percentage of Module 1 and \\(W_2\\) is the module weight percentage of Module 2. In this sample, \\(W_1=60\\), \\(W_2=40\\), and desired final year grade \\(=77\\).</p>
                         <p>Module 1: known assessments contribute \\(50\\%\\) at grade \\(72\\), missing assessments contribute \\(50\\%\\) at trial grade \\(g\\):</p>
