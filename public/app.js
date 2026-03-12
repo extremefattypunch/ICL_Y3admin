@@ -804,6 +804,9 @@ function displayStoredDataResults(results) {
                         <p class="calc-equation">$$S_m(g)=\\sum_{k\\in K_m}\\left(\\frac{w_{m,k}}{100}a_{m,k}\\right)+\\sum_{k\\in M_m}\\left(\\frac{w_{m,k}}{100}g\\right)$$</p>
                         <p class="calc-equation">$$F(g)=\\sum_m\\left(\\frac{W_m}{100}S_m(g)\\right)$$</p>
                         <p class="calc-equation">$$g^*=\\min\\left\\{g\\in\\{0,1,2,\\ldots,100\\}:F(g)\\ge target\\_grade-0.01\\right\\}$$</p>
+                        <p class="calc-equation">$$\\text{Not possible}\\iff\\left\\{g\\in\\{0,1,2,\\ldots,100\\}:F(g)\\ge target\\_grade-0.01\\right\\}=\\varnothing$$</p>
+                        <p class="calc-equation">$$\\text{Equivalent check: if }F(100)<target\\_grade-0.01\\text{, then no possible }g\\text{ exists.}$$</p>
+                        <p>If this happens, you are informed with the red message that the target grade is not achievable even with perfect grades on missing assessments.</p>
                         <p><strong>Sample calculation:</strong></p>
                         <p>Use two modules with explicit bracketed module-weight terms:</p>
                         <p class="calc-equation">$$F(g)=\\left[\\frac{W_1}{100}S_1(g)\\right]+\\left[\\frac{W_2}{100}S_2(g)\\right]$$</p>
@@ -822,7 +825,7 @@ function displayStoredDataResults(results) {
         } else {
             html += `
                 <div class="status-message status-danger">
-                    ❌ Target of ${results.targetGrade.toFixed(2)} is NOT ACHIEVABLE even with perfect grades
+                    ❌ Target of ${results.targetGrade.toFixed(2)} is NOT ACHIEVABLE even with perfect grades (no possible g in [0, 100])
                 </div>
             `;
         }
