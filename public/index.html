@@ -17,6 +17,7 @@
             <button class="nav-btn active" data-page="menu">Menu</button>
             <button class="nav-btn" data-page="input">Input Grades</button>
             <button class="nav-btn" data-page="stored">View Results</button>
+            <button class="nav-btn" data-page="editor">Edit Data</button>
         </nav>
 
         <!-- Menu Page -->
@@ -31,6 +32,11 @@
                     <h2>📈 View Results</h2>
                     <p>See saved grades, current progress, and estimated grades for missing assessments</p>
                     <button onclick="switchPage('stored')" class="btn btn-primary">View</button>
+                </div>
+                <div class="menu-item">
+                    <h2>🛠️ Edit Data</h2>
+                    <p>Edit modules, assessments, titles, weights, pass marks, grades, and descriptions</p>
+                    <button onclick="switchPage('editor')" class="btn btn-primary">Edit</button>
                 </div>
             </div>
         </section>
@@ -49,7 +55,7 @@
             <div class="action-bar">
                 <div class="action-bar-content">
                     <div class="form-group action-bar-field">
-                        <label for="targetGradeInput">Desired Overall Year Grade:</label>
+                        <label for="targetGradeInput">Desired Final Year Grade:</label>
                         <input type="number" id="targetGradeInput" min="0" max="100" value="70" step="1">
                     </div>
                     <button onclick="submitGrades()" class="btn btn-success action-bar-btn">Calculate Results</button>
@@ -62,7 +68,7 @@
             <div class="page-header">
                 <h2>View Results</h2>
                 <div class="form-group">
-                    <label for="storedTargetGrade">Target Grade (default 76):</label>
+                    <label for="storedTargetGrade">Target Final Year Grade (default 76):</label>
                     <input type="number" id="storedTargetGrade" min="0" max="100" value="76" step="1">
                 </div>
                 <button onclick="loadStoredData()" class="btn btn-success">Refresh</button>
@@ -70,6 +76,25 @@
 
             <div id="storedResults" class="results-container">
                 <!-- Results displayed here -->
+            </div>
+        </section>
+
+        <section id="editor" class="page">
+            <div class="page-header">
+                <h2>Edit Data</h2>
+                <p class="page-description">Anything in the grade data can be edited here except the academic year.</p>
+            </div>
+
+            <div class="editor-toolbar">
+                <button onclick="loadConfigEditor()" class="btn btn-primary">Reload Data</button>
+                <button onclick="addModule()" class="btn btn-primary">Add Module</button>
+                <button onclick="saveConfig()" class="btn btn-success">Save Changes</button>
+            </div>
+
+            <div id="editorWarnings"></div>
+            <div id="editorStatus"></div>
+            <div id="editorForm" class="editor-form">
+                <!-- Dynamically populated -->
             </div>
         </section>
     </div>

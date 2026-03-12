@@ -1,6 +1,6 @@
 {
   "year": "2025-26",
-  "total_ects": 75,
+  "total_ects": 60,
   "modules": [
     {
       "module_code": "BIOE60012",
@@ -189,7 +189,7 @@
       ]
     },
     {
-      "module_code": "BIOE7005 ",
+      "module_code": "BIOE7005",
       "title": "Cellular and Molecular Mechanotransduction",
       "ects": 5,
       "module_weight": 9.1,
@@ -205,7 +205,7 @@
           "assessment_name": "Written exam",
           "assessment_weight": 80,
           "description": "Main exam",
-          "grade": 70
+          "grade": null
         }
       ]
     }

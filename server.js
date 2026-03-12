@@ -1,20 +1,14 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const fs = require('fs');
 const path = require('path');
+const { loadGradesData, normalizeData, saveGradesData } = require('./lib/dataStore');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(bodyParser.json());
-app.use(express.static('public'));
+app.use(bodyParser.json({ limit: '1mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Load grades data
-const gradesFile = path.join(__dirname, 'grades.json');
-let gradesData = JSON.parse(fs.readFileSync(gradesFile, 'utf8'));
-
-// Grade Calculator Logic
 class GradeCalculator {
   constructor(data) {
     this.data = data;
@@ -28,6 +22,7 @@ class GradeCalculator {
   getAssessmentsForModule(moduleCode) {
     const module = this.getModuleInfo(moduleCode);
     if (!module) return [];
+
     return module.assessments.map((assessment, index) => ({
       ...assessment,
       moduleCode,
@@ -38,22 +33,15 @@ class GradeCalculator {
   calculateModuleScore(moduleCode, grades) {
     const module = this.getModuleInfo(moduleCode);
     if (!module) return null;
+    if (module.pass_mark === 'pass/fail') return null;
 
-    const assessments = this.getAssessmentsForModule(moduleCode);
-    
-    // Special handling for pass/fail
-    if (module.pass_mark === "pass/fail") {
-      const key = `${moduleCode}_0`;
-      const grade = grades[key];
-      if (grade !== null && grade !== undefined) {
-        return grade >= 50 ? 100 : 0;
-      }
-      return null;
-    }
+    const scoredAssessments = this.getAssessmentsForModule(moduleCode)
+      .filter(assessment => assessment.assessment_weight > 0);
+    const totalWeight = scoredAssessments.reduce(
+      (sum, assessment) => sum + assessment.assessment_weight,
+      0
+    );
 
-    // Only consider assessments with non-zero weight
-    const scoredAssessments = assessments.filter(a => a.assessment_weight > 0);
-    const totalWeight = scoredAssessments.reduce((sum, a) => sum + a.assessment_weight, 0);
     if (totalWeight === 0) return null;
 
     let totalWeightedScore = 0;
@@ -66,9 +54,7 @@ class GradeCalculator {
       if (grade === null || grade === undefined) {
         allGradesPresent = false;
       } else {
-        // Normalize by actual weight sum so scores always reflect true performance
-        const weightedContribution = (assessment.assessment_weight / totalWeight) * grade;
-        totalWeightedScore += weightedContribution;
+        totalWeightedScore += (assessment.assessment_weight / totalWeight) * grade;
       }
     }
 
@@ -81,18 +67,15 @@ class GradeCalculator {
     let allScoresPresent = true;
 
     for (const module of this.data.modules) {
-      // Pass/fail modules don't contribute to the final score
-      if (module.pass_mark === 'pass/fail') continue;
+      if (module.pass_mark === 'pass/fail' || module.module_weight === 0) {
+        continue;
+      }
 
-      const moduleCode = module.module_code;
-      const moduleScore = moduleScores[moduleCode];
-
+      const moduleScore = moduleScores[module.module_code];
       if (moduleScore === null || moduleScore === undefined) {
         allScoresPresent = false;
       } else {
-        const moduleWeight = module.module_weight / 100;
-        const contribution = moduleWeight * moduleScore;
-        finalScore += contribution;
+        finalScore += (module.module_weight / 100) * moduleScore;
       }
     }
 
@@ -101,13 +84,17 @@ class GradeCalculator {
   }
 
   estimateMissingGrades(grades, targetGrade) {
-    // Find all missing grades, excluding pass/fail modules and zero-weight assessments
     const missingKeys = [];
+
     for (const module of this.data.modules) {
-      if (module.pass_mark === 'pass/fail') continue;
+      if (module.pass_mark === 'pass/fail' || module.module_weight === 0) {
+        continue;
+      }
+
       const assessments = this.getAssessmentsForModule(module.module_code);
       for (const assessment of assessments) {
         if (assessment.assessment_weight === 0) continue;
+
         const key = `${module.module_code}_${assessment.assessmentIndex}`;
         if (grades[key] === null || grades[key] === undefined) {
           missingKeys.push(key);
@@ -117,7 +104,6 @@ class GradeCalculator {
 
     if (missingKeys.length === 0) return null;
 
-    // Try different estimated grades
     for (let estimatedGrade = 0; estimatedGrade <= 100; estimatedGrade++) {
       const testGrades = { ...grades };
       for (const key of missingKeys) {
@@ -127,7 +113,9 @@ class GradeCalculator {
       const moduleScores = {};
       for (const module of this.data.modules) {
         const score = this.calculateModuleScore(module.module_code, testGrades);
-        if (score !== null) moduleScores[module.module_code] = score;
+        if (score !== null) {
+          moduleScores[module.module_code] = score;
+        }
       }
 
       const finalScore = this.calculateFinalScore(moduleScores);
@@ -140,187 +128,256 @@ class GradeCalculator {
   }
 }
 
-// Routes
+function getAssessmentWeightSummary(module) {
+  const assessmentWeightTotal = module.assessments.reduce(
+    (sum, assessment) => sum + Number(assessment.assessment_weight || 0),
+    0
+  );
+  const assessmentWeightValid = Math.abs(assessmentWeightTotal - 100) < 0.01;
 
-// Get all modules
-app.get('/api/modules', (req, res) => {
-  const modules = gradesData.modules.map(m => ({
-    code: m.module_code,
-    title: m.title,
-    ects: m.ects,
-    weight: m.module_weight,
-    passMark: m.pass_mark,
-    assessments: m.assessments.map((a, idx) => ({
-      index: idx,
-      name: a.assessment_name,
-      weight: a.assessment_weight,
-      description: a.description,
-      grade: a.grade
+  return {
+    assessmentWeightTotal,
+    assessmentWeightValid,
+    assessmentWeightWarning: assessmentWeightValid
+      ? null
+      : `Assessment weights total ${assessmentWeightTotal}% instead of 100%.`
+  };
+}
+
+function buildModulePayload(module, grades = null, calculator = null) {
+  const moduleCode = module.module_code;
+  const weightSummary = getAssessmentWeightSummary(module);
+  const assessments = calculator
+    ? calculator.getAssessmentsForModule(moduleCode)
+    : module.assessments.map((assessment, index) => ({
+        ...assessment,
+        moduleCode,
+        assessmentIndex: index
+      }));
+
+  return {
+    code: moduleCode,
+    title: module.title,
+    ects: module.ects,
+    weight: module.module_weight,
+    passMark: module.pass_mark,
+    assessmentWeightTotal: weightSummary.assessmentWeightTotal,
+    assessmentWeightValid: weightSummary.assessmentWeightValid,
+    assessmentWeightWarning: weightSummary.assessmentWeightWarning,
+    assessments: assessments.map(assessment => ({
+      index: assessment.assessmentIndex,
+      name: assessment.assessment_name,
+      weight: assessment.assessment_weight,
+      description: assessment.description,
+      grade: grades ? grades[`${moduleCode}_${assessment.assessmentIndex}`] : assessment.grade
     }))
-  }));
-  res.json(modules);
-});
+  };
+}
 
-// Calculate grades
-app.post('/api/calculate', (req, res) => {
-  const { grades, targetGrade } = req.body;
-  const calculator = new GradeCalculator(gradesData);
+function buildModulesResponse(data) {
+  return data.modules.map(module => buildModulePayload(module));
+}
 
+function buildStoredGradesObject(data) {
+  const grades = {};
+
+  data.modules.forEach(module => {
+    module.assessments.forEach((assessment, index) => {
+      grades[`${module.module_code}_${index}`] = assessment.grade;
+    });
+  });
+
+  return grades;
+}
+
+function buildResults(data, grades, targetGrade, includeTargetGrade = false) {
+  const calculator = new GradeCalculator(data);
   const results = {
     modules: [],
     finalScore: null,
     estimatedGrade: null,
     achievesTarget: null,
-    missingModules: []
+    missingModules: [],
+    completeModules: []
   };
 
-  const moduleScores = {};
-
-  // Calculate each module
-  for (const module of gradesData.modules) {
-    const moduleCode = module.module_code;
-    const moduleScore = calculator.calculateModuleScore(moduleCode, grades);
-    
-    const moduleResult = {
-      code: moduleCode,
-      title: module.title,
-      weight: module.module_weight,
-      ects: module.ects,
-      assessments: [],
-      score: moduleScore
-    };
-
-    const assessments = calculator.getAssessmentsForModule(moduleCode);
-    for (const assessment of assessments) {
-      const key = `${moduleCode}_${assessment.assessmentIndex}`;
-      const grade = grades[key];
-      moduleResult.assessments.push({
-        name: assessment.assessment_name,
-        weight: assessment.assessment_weight,
-        grade: grade,
-        description: assessment.description
-      });
-    }
-
-    results.modules.push(moduleResult);
-    if (moduleScore !== null) moduleScores[moduleCode] = moduleScore;
-    else results.missingModules.push(moduleCode);
-  }
-
-  // Calculate final score
-  const finalScore = calculator.calculateFinalScore(moduleScores);
-  results.finalScore = finalScore;
-
-  if (finalScore !== null) {
-    results.achievesTarget = finalScore >= targetGrade - 0.01;
-  } else {
-    // Estimate required grade
-    const estimatedGrade = calculator.estimateMissingGrades(grades, targetGrade);
-    results.estimatedGrade = estimatedGrade;
-    if (estimatedGrade !== null) {
-      results.achievesTarget = true; // Achievable with estimated grade
-    } else {
-      results.achievesTarget = false; // Not achievable
-    }
-  }
-
-  res.json(results);
-});
-
-// Get stored data with target grade estimation
-app.get('/api/stored-data', (req, res) => {
-  const targetGrade = req.query.target ? parseFloat(req.query.target) : 76.0;
-  const calculator = new GradeCalculator(gradesData);
-
-  const results = {
-    targetGrade,
-    modules: [],
-    finalScore: null,
-    estimatedGrade: null,
-    completeModules: [],
-    missingModules: []
-  };
-
-  // Build grades object from stored data
-  const grades = {};
-  for (const module of gradesData.modules) {
-    const assessments = calculator.getAssessmentsForModule(module.module_code);
-    for (const assessment of assessments) {
-      const key = `${module.module_code}_${assessment.assessmentIndex}`;
-      grades[key] = assessment.grade;
-    }
+  if (includeTargetGrade) {
+    results.targetGrade = targetGrade;
   }
 
   const moduleScores = {};
 
-  // Calculate each module
-  for (const module of gradesData.modules) {
-    const moduleCode = module.module_code;
-    const moduleScore = calculator.calculateModuleScore(moduleCode, grades);
-    
-    const moduleResult = {
-      code: moduleCode,
-      title: module.title,
-      weight: module.module_weight,
-      ects: module.ects,
-      assessments: [],
-      score: moduleScore
-    };
+  for (const module of data.modules) {
+    const modulePayload = buildModulePayload(module, grades, calculator);
+    const countsTowardsFinal = module.pass_mark !== 'pass/fail' && module.module_weight > 0;
+    const moduleScore = calculator.calculateModuleScore(module.module_code, grades);
 
-    const assessments = calculator.getAssessmentsForModule(moduleCode);
-    for (const assessment of assessments) {
-      const key = `${moduleCode}_${assessment.assessmentIndex}`;
-      const grade = grades[key];
-      moduleResult.assessments.push({
-        name: assessment.assessment_name,
-        weight: assessment.assessment_weight,
-        grade: grade,
-        description: assessment.description
-      });
+    modulePayload.score = moduleScore;
+    results.modules.push(modulePayload);
+
+    if (!countsTowardsFinal) {
+      continue;
     }
 
-    results.modules.push(moduleResult);
     if (moduleScore !== null) {
-      moduleScores[moduleCode] = moduleScore;
-      results.completeModules.push(moduleCode);
+      moduleScores[module.module_code] = moduleScore;
+      results.completeModules.push(module.module_code);
     } else {
-      results.missingModules.push(moduleCode);
+      results.missingModules.push(module.module_code);
     }
   }
 
-  // Calculate final score
-  const finalScore = calculator.calculateFinalScore(moduleScores);
-  results.finalScore = finalScore;
+  results.finalScore = calculator.calculateFinalScore(moduleScores);
 
-  // Estimate if needed
-  if (finalScore === null) {
-    const estimatedGrade = calculator.estimateMissingGrades(grades, targetGrade);
-    results.estimatedGrade = estimatedGrade;
-  }
-
-  res.json(results);
-});
-
-// Save grade
-app.post('/api/save-grade', (req, res) => {
-  const { moduleCode, assessmentIndex, grade } = req.body;
-  
-  const module = gradesData.modules.find(m => m.module_code === moduleCode);
-  if (module && module.assessments[assessmentIndex]) {
-    module.assessments[assessmentIndex].grade = grade;
-    fs.writeFileSync(gradesFile, JSON.stringify(gradesData, null, 2));
-    res.json({ success: true });
+  if (results.finalScore !== null) {
+    results.achievesTarget = results.finalScore >= targetGrade - 0.01;
   } else {
-    res.status(400).json({ success: false, error: 'Module or assessment not found' });
+    results.estimatedGrade = calculator.estimateMissingGrades(grades, targetGrade);
+    results.achievesTarget = results.estimatedGrade !== null;
+  }
+
+  return results;
+}
+
+function validateEditableModules(modules) {
+  if (!Array.isArray(modules)) {
+    return 'Modules must be an array.';
+  }
+
+  const seenModuleCodes = new Set();
+
+  for (let moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
+    const module = modules[moduleIndex];
+    const moduleCode = String(module.module_code ?? '').trim();
+    const title = String(module.title ?? '').trim();
+
+    if (!moduleCode) {
+      return `Module ${moduleIndex + 1} is missing a module code.`;
+    }
+
+    if (seenModuleCodes.has(moduleCode)) {
+      return `Duplicate module code found: ${moduleCode}.`;
+    }
+    seenModuleCodes.add(moduleCode);
+
+    if (!title) {
+      return `Module ${moduleCode} is missing a title.`;
+    }
+
+    if (!Array.isArray(module.assessments)) {
+      return `Module ${moduleCode} must contain an assessments array.`;
+    }
+
+    for (let assessmentIndex = 0; assessmentIndex < module.assessments.length; assessmentIndex++) {
+      const assessment = module.assessments[assessmentIndex];
+      const assessmentName = String(assessment.assessment_name ?? '').trim();
+
+      if (!assessmentName) {
+        return `Assessment ${assessmentIndex + 1} in module ${moduleCode} is missing a name.`;
+      }
+    }
+  }
+
+  return null;
+}
+
+app.get('/api/modules', async (req, res) => {
+  try {
+    const gradesData = await loadGradesData();
+    res.json(buildModulesResponse(gradesData));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`\n${'='.repeat(70)}`);
-  console.log(`ICL Y3 GRADE CALCULATOR - WEB APPLICATION`);
-  console.log(`${'='.repeat(70)}`);
-  console.log(`\nServer running at http://localhost:${PORT}`);
-  console.log(`\nOpen your browser and navigate to: http://localhost:${PORT}`);
-  console.log(`\nPress Ctrl+C to stop the server\n`);
+app.get('/api/config', async (req, res) => {
+  try {
+    const gradesData = await loadGradesData();
+    const normalized = normalizeData(gradesData);
+    const warnings = normalized.modules
+      .map(module => ({ code: module.module_code, ...getAssessmentWeightSummary(module) }))
+      .filter(module => !module.assessmentWeightValid);
+
+    res.json({ ...normalized, warnings });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
+
+app.put('/api/config', async (req, res) => {
+  try {
+    const currentData = await loadGradesData();
+    const modules = Array.isArray(req.body.modules) ? req.body.modules : [];
+    const validationError = validateEditableModules(modules);
+
+    if (validationError) {
+      return res.status(400).json({ success: false, error: validationError });
+    }
+
+    const updatedData = await saveGradesData({
+      year: currentData.year,
+      modules
+    });
+
+    const warnings = updatedData.modules
+      .map(module => ({ code: module.module_code, ...getAssessmentWeightSummary(module) }))
+      .filter(module => !module.assessmentWeightValid);
+
+    return res.json({ success: true, data: updatedData, warnings });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/calculate', async (req, res) => {
+  try {
+    const gradesData = await loadGradesData();
+    const { grades = {}, targetGrade } = req.body;
+    const numericTargetGrade = Number.isFinite(Number(targetGrade)) ? Number(targetGrade) : 76;
+    res.json(buildResults(gradesData, grades, numericTargetGrade));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/stored-data', async (req, res) => {
+  try {
+    const gradesData = await loadGradesData();
+    const targetGrade = req.query.target ? parseFloat(req.query.target) : 76;
+    const grades = buildStoredGradesObject(gradesData);
+    res.json(buildResults(gradesData, grades, targetGrade, true));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/save-grade', async (req, res) => {
+  try {
+    const { moduleCode, assessmentIndex, grade } = req.body;
+    const gradesData = await loadGradesData();
+    const module = gradesData.modules.find(m => m.module_code === moduleCode);
+
+    if (!module || !module.assessments[assessmentIndex]) {
+      return res.status(400).json({ success: false, error: 'Module or assessment not found' });
+    }
+
+    module.assessments[assessmentIndex].grade = grade;
+    await saveGradesData(gradesData);
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`\n${'='.repeat(70)}`);
+    console.log('ICL Y3 GRADE CALCULATOR - WEB APPLICATION');
+    console.log(`${'='.repeat(70)}`);
+    console.log(`\nServer running at http://localhost:${PORT}`);
+    console.log(`\nOpen your browser and navigate to: http://localhost:${PORT}`);
+    console.log('\nPress Ctrl+C to stop the server\n');
+  });
+}
+
+module.exports = app;

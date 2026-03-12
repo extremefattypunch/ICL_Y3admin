@@ -19,6 +19,9 @@ A modern, user-friendly web application for calculating final year grades for Im
 - Persistent grade storage in JSON
 - View saved grades with formatted displays
 - Skip input boxes while retaining previous values
+- Full edit UI for modules and assessments
+- Add, delete, rename, and reorder-like editing of data entries
+- Edit everything in the JSON except `year`
 
 🎯 **Target Analysis**
 - Set desired overall year grade
@@ -71,9 +74,10 @@ Navigate to `http://localhost:3000` in your web browser.
 ## Usage
 
 ### Main Menu
-The home page presents three options:
+The home page presents four options:
 - **Input Grades** - Enter new grades and calculate results
-- **View Data** - See all saved grades with analysis
+- **View Results** - See all saved grades with analysis
+- **Edit Data** - Add/delete/edit modules and assessment items
 - **Browse** - Navigate between sections
 
 ### Input Your Grades Workflow
@@ -97,6 +101,26 @@ The home page presents three options:
    - Module scores
    - Final year score (if all data complete)
    - Estimated grades for missing assessments
+
+### Edit Data
+
+The **Edit Data** page allows you to change the grade database directly from the UI.
+
+You can:
+- Add a new module
+- Delete a module
+- Rename a module
+- Change module code, ECTS, module weight, and pass mark
+- Add a new assessment item
+- Delete an assessment item
+- Change assessment name, description, weight, and stored grade
+
+Restrictions:
+- The academic `year` is intentionally read-only and is not editable from the UI
+
+Warnings:
+- The editor warns you whenever assessment weights in a module do not sum to 100%
+- You can still save, but the warning remains visible until fixed
 
 ## File Structure
 
@@ -130,6 +154,14 @@ Calculates grades based on input
 Returns stored grades with analysis
 - Query param: `target` (optional, default 76)
 - Returns: Stored data with calculations and estimations
+
+### GET /api/config
+Returns the editable grade configuration plus module weight warnings
+
+### PUT /api/config
+Saves the editable grade configuration
+- Request body: `{ modules: [...] }`
+- The `year` is preserved server-side and cannot be changed through this endpoint
 
 ### POST /api/save-grade
 Saves a single grade to persistent storage
@@ -223,6 +255,47 @@ fs.writeFileSync('grades.json', JSON.stringify(data, null, 2));
 console.log('All grades reset.');
 "
 ```
+
+## Vercel Deployment
+
+This project is set up for Vercel already:
+- [vercel.json](vercel.json) routes requests to the serverless entrypoint
+- [api/index.js](api/index.js) exports the Express app
+- [lib/dataStore.js](lib/dataStore.js) uses local `grades.json` in development and Vercel Blob in production
+
+### 1. Push the repository to GitHub
+
+Ensure the latest changes are committed and pushed.
+
+### 2. Import the project into Vercel
+
+In Vercel:
+- Create a new project
+- Import this GitHub repository
+- Framework preset: **Other**
+
+### 3. Enable Blob storage
+
+In Vercel:
+- Add a **Blob** store to the project
+- Copy the generated `BLOB_READ_WRITE_TOKEN`
+- Add it to the project environment variables
+
+Local reference:
+- See [.env.example](.env.example)
+
+### 4. Deploy
+
+Vercel will install dependencies and deploy automatically.
+
+### 5. Important persistence note
+
+Without Vercel Blob configured:
+- serverless file writes are not persistent
+- changes made in the Edit Data UI may be lost on later invocations
+
+With Vercel Blob configured:
+- grade changes and module edits persist correctly across deployments and requests
 
 ---
 
