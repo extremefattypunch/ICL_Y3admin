@@ -34,7 +34,7 @@
           "assessment_name": "Written report",
           "assessment_weight": 0,
           "description": "Literature mind map",
-          "grade": 78
+          "grade": null
         },
         {
           "assessment_name": "Written report",
@@ -142,7 +142,7 @@
           "assessment_name": "Problem sheet",
           "assessment_weight": 20,
           "description": "Matlab assignment",
-          "grade": 71
+          "grade": null
         }
       ]
     },
@@ -157,7 +157,7 @@
           "assessment_name": "Written exam",
           "assessment_weight": 80,
           "description": "Part 1: Deterministic Nonlinear Dynamics",
-          "grade": 100
+          "grade": null
         },
         {
           "assessment_name": "Problem sheet",
@@ -169,7 +169,7 @@
           "assessment_name": "Problem sheet",
           "assessment_weight": 10,
           "description": "Part 3",
-          "grade": null
+          "grade": 100
         }
       ]
     },
@@ -184,7 +184,7 @@
           "assessment_name": "Pass/Fail",
           "assessment_weight": 100,
           "description": "Set by I-Explore",
-          "grade": 100
+          "grade": null
         }
       ]
     },

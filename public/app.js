@@ -55,7 +55,10 @@ function loadModules() {
     fetch('/api/modules')
         .then(response => response.json())
         .then(data => {
-            modulesData = data;
+            modulesData = data.modules;
+            modulesData.moduleWeightTotal = data.moduleWeightTotal;
+            modulesData.moduleWeightValid = data.moduleWeightValid;
+            modulesData.moduleWeightWarning = data.moduleWeightWarning;
             renderInputForm();
         })
         .catch(error => {
@@ -110,7 +113,13 @@ function renderEditorWarnings() {
         })
         .filter(item => !item.valid);
 
-    if (warnings.length === 0) {
+    const moduleWeightTotal = configData.modules.reduce(
+        (sum, module) => sum + (parseFloat(module.module_weight) || 0),
+        0
+    );
+    const hasModuleWeightWarning = Math.abs(moduleWeightTotal - 100) >= 0.01;
+
+    if (warnings.length === 0 && !hasModuleWeightWarning) {
         warningsDiv.innerHTML = '';
         return;
     }
@@ -118,9 +127,22 @@ function renderEditorWarnings() {
     warningsDiv.innerHTML = `
         <div class="status-message status-warning">
             <strong>Warning:</strong> Some modules do not have assessment weights summing to 100%.
+            ${hasModuleWeightWarning ? `<p class="warning-paragraph">Module weights across all modules total ${moduleWeightTotal}% instead of 100%.</p>` : ''}
             <ul class="warning-list">
                 ${warnings.map(item => `<li>${item.code}: ${item.total}%</li>`).join('')}
             </ul>
+        </div>
+    `;
+}
+
+function buildModuleWeightWarningHtml(total, warning) {
+    if (warning === null || warning === undefined) {
+        return '';
+    }
+
+    return `
+        <div class="status-message status-warning global-warning">
+            ⚠️ Module weights across all modules total ${total}% instead of 100%.
         </div>
     `;
 }
@@ -332,7 +354,10 @@ function saveConfig() {
 // Render input form with all modules and assessments
 function renderInputForm() {
     const formContainer = document.getElementById('inputForm');
-    let html = '';
+    let html = buildModuleWeightWarningHtml(
+        modulesData.moduleWeightTotal,
+        modulesData.moduleWeightWarning
+    );
 
     modulesData.forEach(module => {
         const weightWarningHtml = module.assessmentWeightValid
@@ -446,7 +471,7 @@ function submitGrades() {
 
 // Load and display stored data
 function loadStoredData() {
-    const targetGrade = parseFloat(document.getElementById('storedTargetGrade').value) || 76;
+    const targetGrade = parseFloat(document.getElementById('storedTargetGrade').value) || 77;
 
     fetch(`/api/stored-data?target=${targetGrade}`)
         .then(response => response.json())
@@ -466,6 +491,8 @@ function displayStoredDataResults(results) {
             <h3>Target Final Year Grade: ${results.targetGrade.toFixed(2)}</h3>
         </div>
     `;
+
+    html += buildModuleWeightWarningHtml(results.moduleWeightTotal, results.moduleWeightWarning);
 
     // Display each module's results
     results.modules.forEach(module => {

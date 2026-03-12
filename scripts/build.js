@@ -35,12 +35,33 @@ try {
   
   const moduleCount = gradesData.modules.length;
   const assessmentCount = gradesData.modules.reduce((sum, m) => sum + (m.assessments ? m.assessments.length : 0), 0);
+  const computedTotalEcts = gradesData.modules.reduce((sum, m) => sum + Number(m.ects || 0), 0);
+  const moduleWeightTotal = gradesData.modules.reduce((sum, m) => sum + Number(m.module_weight || 0), 0);
+  const invalidAssessmentWeightModules = gradesData.modules
+    .map(module => ({
+      code: module.module_code,
+      total: (module.assessments || []).reduce((sum, a) => sum + Number(a.assessment_weight || 0), 0)
+    }))
+    .filter(module => Math.abs(module.total - 100) >= 0.01);
   
   console.log(`✓ grades.json validated`);
   console.log(`   - Year: ${gradesData.year}`);
-  console.log(`   - Total ECTS: ${gradesData.total_ects}`);
+  console.log(`   - Total ECTS: ${computedTotalEcts}`);
   console.log(`   - Modules: ${moduleCount}`);
-  console.log(`   - Assessments: ${assessmentCount}\n`);
+  console.log(`   - Assessments: ${assessmentCount}`);
+
+  if (Math.abs(moduleWeightTotal - 100) >= 0.01) {
+    console.log(`   ⚠ Module weights total ${moduleWeightTotal}% instead of 100%`);
+  }
+
+  if (invalidAssessmentWeightModules.length > 0) {
+    console.log('   ⚠ Modules with assessment totals not equal to 100%:');
+    invalidAssessmentWeightModules.forEach(module => {
+      console.log(`     - ${module.code}: ${module.total}%`);
+    });
+  }
+
+  console.log('');
 } catch (error) {
   console.error(`✗ grades.json validation failed: ${error.message}`);
   process.exit(1);

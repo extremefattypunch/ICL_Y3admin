@@ -144,6 +144,22 @@ function getAssessmentWeightSummary(module) {
   };
 }
 
+function getModuleWeightSummary(modules) {
+  const moduleWeightTotal = modules.reduce(
+    (sum, module) => sum + Number(module.module_weight || 0),
+    0
+  );
+  const moduleWeightValid = Math.abs(moduleWeightTotal - 100) < 0.01;
+
+  return {
+    moduleWeightTotal,
+    moduleWeightValid,
+    moduleWeightWarning: moduleWeightValid
+      ? null
+      : `Module weights total ${moduleWeightTotal}% across all modules instead of 100%.`
+  };
+}
+
 function buildModulePayload(module, grades = null, calculator = null) {
   const moduleCode = module.module_code;
   const weightSummary = getAssessmentWeightSummary(module);
@@ -175,7 +191,12 @@ function buildModulePayload(module, grades = null, calculator = null) {
 }
 
 function buildModulesResponse(data) {
-  return data.modules.map(module => buildModulePayload(module));
+  const moduleWeightSummary = getModuleWeightSummary(data.modules);
+
+  return {
+    modules: data.modules.map(module => buildModulePayload(module)),
+    ...moduleWeightSummary
+  };
 }
 
 function buildStoredGradesObject(data) {
@@ -192,13 +213,15 @@ function buildStoredGradesObject(data) {
 
 function buildResults(data, grades, targetGrade, includeTargetGrade = false) {
   const calculator = new GradeCalculator(data);
+  const moduleWeightSummary = getModuleWeightSummary(data.modules);
   const results = {
     modules: [],
     finalScore: null,
     estimatedGrade: null,
     achievesTarget: null,
     missingModules: [],
-    completeModules: []
+    completeModules: [],
+    ...moduleWeightSummary
   };
 
   if (includeTargetGrade) {
@@ -298,7 +321,9 @@ app.get('/api/config', async (req, res) => {
       .map(module => ({ code: module.module_code, ...getAssessmentWeightSummary(module) }))
       .filter(module => !module.assessmentWeightValid);
 
-    res.json({ ...normalized, warnings });
+    const moduleWeightSummary = getModuleWeightSummary(normalized.modules);
+
+    res.json({ ...normalized, warnings, ...moduleWeightSummary });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -323,7 +348,9 @@ app.put('/api/config', async (req, res) => {
       .map(module => ({ code: module.module_code, ...getAssessmentWeightSummary(module) }))
       .filter(module => !module.assessmentWeightValid);
 
-    return res.json({ success: true, data: updatedData, warnings });
+    const moduleWeightSummary = getModuleWeightSummary(updatedData.modules);
+
+    return res.json({ success: true, data: updatedData, warnings, ...moduleWeightSummary });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
