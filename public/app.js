@@ -395,7 +395,16 @@ function saveConfig() {
     })
     .catch(error => {
         console.error('Error saving config:', error);
-        setEditorStatus(error.message || 'Failed to save changes.', 'danger');
+        const message = String(error.message || 'Failed to save changes.');
+        if (/EROFS|read-only file system/i.test(message)) {
+            setEditorStatus(
+                'Cloud save is unavailable on this deployment (read-only filesystem). Your edits are still saved in this browser cache/local storage.',
+                'warning'
+            );
+            return;
+        }
+
+        setEditorStatus(message, 'danger');
     });
 }
 
