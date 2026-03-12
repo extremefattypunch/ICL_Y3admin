@@ -3,6 +3,23 @@ let modulesData = [];
 let configData = null;
 const EDITOR_DRAFT_STORAGE_KEY = 'iclEditorDraftConfig';
 const USER_CONFIG_STORAGE_KEY = 'iclUserSavedConfig';
+let editorHasUnsavedChanges = false;
+
+function setEditorSaveButtonState(isDirty) {
+    const saveButton = document.getElementById('saveConfigBtn');
+    if (!saveButton) return;
+    saveButton.textContent = isDirty ? 'Save Data' : 'Data Saved';
+}
+
+function markEditorDirty() {
+    editorHasUnsavedChanges = true;
+    setEditorSaveButtonState(true);
+}
+
+function markEditorSaved() {
+    editorHasUnsavedChanges = false;
+    setEditorSaveButtonState(false);
+}
 
 function getSavedGradesFromStorage() {
     try {
@@ -140,7 +157,9 @@ function switchPage(pageName) {
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    document.querySelector(`[data-page="${pageName}"]`).classList.add('active');
+    document.querySelectorAll(`[data-page="${pageName}"]`).forEach(btn => {
+        btn.classList.add('active');
+    });
 
     // Refresh data if viewing stored data
     if (pageName === 'stored') {
@@ -180,6 +199,7 @@ function loadConfigEditor() {
     const editorDraft = getEditorDraftFromStorage();
     if (editorDraft) {
         configData = editorDraft;
+        markEditorDirty();
         renderConfigEditor();
         return;
     }
@@ -187,6 +207,7 @@ function loadConfigEditor() {
     const savedConfig = getSavedUserConfigFromStorage();
     if (savedConfig) {
         configData = savedConfig;
+        markEditorSaved();
         renderConfigEditor();
         return;
     }
@@ -195,6 +216,7 @@ function loadConfigEditor() {
         .then(response => response.json())
         .then(data => {
             configData = data;
+            markEditorSaved();
             renderConfigEditor();
         })
         .catch(error => {
@@ -377,6 +399,7 @@ function updateModuleField(moduleIndex, field, value) {
     configData.modules[moduleIndex][field] = numericFields.includes(field)
         ? (value === '' ? 0 : parseFloat(value))
         : value;
+    markEditorDirty();
     saveEditorDraftToStorage();
     renderConfigEditor();
 }
@@ -390,6 +413,7 @@ function updateAssessmentField(moduleIndex, assessmentIndex, field, value) {
     } else {
         configData.modules[moduleIndex].assessments[assessmentIndex][field] = value;
     }
+    markEditorDirty();
     saveEditorDraftToStorage();
     renderConfigEditor();
 }
@@ -415,6 +439,7 @@ function addModule() {
         ]
     });
 
+    markEditorDirty();
     saveEditorDraftToStorage();
     renderConfigEditor();
 }
@@ -422,6 +447,7 @@ function addModule() {
 function removeModule(moduleIndex) {
     if (!configData) return;
     configData.modules.splice(moduleIndex, 1);
+    markEditorDirty();
     saveEditorDraftToStorage();
     renderConfigEditor();
 }
@@ -434,6 +460,7 @@ function addAssessment(moduleIndex) {
         description: '',
         grade: null
     });
+    markEditorDirty();
     saveEditorDraftToStorage();
     renderConfigEditor();
 }
@@ -441,6 +468,7 @@ function addAssessment(moduleIndex) {
 function removeAssessment(moduleIndex, assessmentIndex) {
     if (!configData) return;
     configData.modules[moduleIndex].assessments.splice(assessmentIndex, 1);
+    markEditorDirty();
     saveEditorDraftToStorage();
     renderConfigEditor();
 }
@@ -453,6 +481,7 @@ function saveConfig() {
 
     saveUserConfigToStorage(configData.modules);
     clearEditorDraftFromStorage();
+    markEditorSaved();
     setEditorStatus('Changes saved and applied in this browser.', 'success');
     loadModules();
     loadStoredData();
@@ -477,6 +506,7 @@ function saveConfig() {
         configData = data.data;
         saveUserConfigToStorage(data.data.modules);
         clearEditorDraftFromStorage();
+        markEditorSaved();
         setEditorStatus('Data saved and synced successfully.', 'success');
         renderConfigEditor();
         loadModules();
