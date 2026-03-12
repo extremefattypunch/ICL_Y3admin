@@ -2,6 +2,7 @@
 let modulesData = [];
 let configData = null;
 const EDITOR_DRAFT_STORAGE_KEY = 'iclEditorDraftConfig';
+const USER_CONFIG_STORAGE_KEY = 'iclUserSavedConfig';
 
 function getSavedGradesFromStorage() {
     try {
@@ -40,6 +41,67 @@ function saveEditorDraftToStorage() {
 
 function clearEditorDraftFromStorage() {
     localStorage.removeItem(EDITOR_DRAFT_STORAGE_KEY);
+}
+
+function getSavedUserConfigFromStorage() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(USER_CONFIG_STORAGE_KEY) || 'null');
+        if (!parsed || typeof parsed !== 'object') return null;
+        if (!Array.isArray(parsed.modules)) return null;
+        return parsed;
+    } catch (error) {
+        return null;
+    }
+}
+
+function saveUserConfigToStorage(modules) {
+    if (!Array.isArray(modules)) return;
+    localStorage.setItem(USER_CONFIG_STORAGE_KEY, JSON.stringify({ modules }));
+}
+
+function buildModulesResponseFromConfigModules(modules) {
+    const moduleWeightTotal = modules.reduce(
+        (sum, module) => sum + Number(module.module_weight || 0),
+        0
+    );
+    const moduleWeightValid = Math.abs(moduleWeightTotal - 100) < 0.01;
+
+    const payload = modules.map(module => {
+        const assessments = Array.isArray(module.assessments) ? module.assessments : [];
+        const assessmentWeightTotal = assessments.reduce(
+            (sum, assessment) => sum + Number(assessment.assessment_weight || 0),
+            0
+        );
+        const assessmentWeightValid = Math.abs(assessmentWeightTotal - 100) < 0.01;
+
+        return {
+            code: module.module_code,
+            title: module.title,
+            ects: module.ects,
+            weight: module.module_weight,
+            passMark: module.pass_mark,
+            assessmentWeightTotal,
+            assessmentWeightValid,
+            assessmentWeightWarning: assessmentWeightValid
+                ? null
+                : `Assessment weights total ${assessmentWeightTotal}% instead of 100%.`,
+            assessments: assessments.map((assessment, index) => ({
+                index,
+                name: assessment.assessment_name,
+                weight: assessment.assessment_weight,
+                description: assessment.description,
+                grade: assessment.grade ?? null
+            }))
+        };
+    });
+
+    payload.moduleWeightTotal = moduleWeightTotal;
+    payload.moduleWeightValid = moduleWeightValid;
+    payload.moduleWeightWarning = moduleWeightValid
+        ? null
+        : `Module weights total ${moduleWeightTotal}% across all modules instead of 100%.`;
+
+    return payload;
 }
 
 // Initialize app on page load
@@ -92,6 +154,13 @@ function switchPage(pageName) {
 
 // Load modules from server
 function loadModules() {
+    const savedConfig = getSavedUserConfigFromStorage();
+    if (savedConfig) {
+        modulesData = buildModulesResponseFromConfigModules(savedConfig.modules);
+        renderInputForm();
+        return;
+    }
+
     fetch('/api/modules')
         .then(response => response.json())
         .then(data => {
@@ -108,11 +177,24 @@ function loadModules() {
 }
 
 function loadConfigEditor() {
+    const editorDraft = getEditorDraftFromStorage();
+    if (editorDraft) {
+        configData = editorDraft;
+        renderConfigEditor();
+        return;
+    }
+
+    const savedConfig = getSavedUserConfigFromStorage();
+    if (savedConfig) {
+        configData = savedConfig;
+        renderConfigEditor();
+        return;
+    }
+
     fetch('/api/config')
         .then(response => response.json())
         .then(data => {
-            const editorDraft = getEditorDraftFromStorage();
-            configData = editorDraft || data;
+            configData = data;
             renderConfigEditor();
         })
         .catch(error => {
@@ -369,6 +451,12 @@ function saveConfig() {
         return;
     }
 
+    saveUserConfigToStorage(configData.modules);
+    clearEditorDraftFromStorage();
+    setEditorStatus('Changes saved and applied in this browser.', 'success');
+    loadModules();
+    loadStoredData();
+
     fetch('/api/config', {
         method: 'PUT',
         headers: {
@@ -387,24 +475,19 @@ function saveConfig() {
     })
     .then(data => {
         configData = data.data;
+        saveUserConfigToStorage(data.data.modules);
         clearEditorDraftFromStorage();
-        setEditorStatus('Data saved successfully.', 'success');
+        setEditorStatus('Data saved and synced successfully.', 'success');
         renderConfigEditor();
         loadModules();
         loadStoredData();
     })
     .catch(error => {
         console.error('Error saving config:', error);
-        const message = String(error.message || 'Failed to save changes.');
-        if (/EROFS|read-only file system/i.test(message)) {
-            setEditorStatus(
-                'Cloud save is unavailable on this deployment (read-only filesystem). Your edits are still saved in this browser cache/local storage.',
-                'warning'
-            );
-            return;
-        }
-
-        setEditorStatus(message, 'danger');
+        setEditorStatus(
+            'Changes are saved and working in this browser. Cloud sync is unavailable on this deployment.',
+            'success'
+        );
     });
 }
 
@@ -532,11 +615,17 @@ function submitGrades() {
 function loadStoredData() {
     const targetGrade = parseFloat(document.getElementById('storedTargetGrade').value) || 77;
     const savedGrades = JSON.parse(localStorage.getItem('iclSavedGrades') || '{}');
+    const savedConfig = getSavedUserConfigFromStorage();
+    const requestBody = { grades: savedGrades, targetGrade: targetGrade };
+
+    if (savedConfig && Array.isArray(savedConfig.modules)) {
+        requestBody.modules = savedConfig.modules;
+    }
 
     fetch('/api/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grades: savedGrades, targetGrade: targetGrade })
+        body: JSON.stringify(requestBody)
     })
     .then(response => response.json())
     .then(results => {

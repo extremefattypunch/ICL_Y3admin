@@ -359,9 +359,23 @@ app.put('/api/config', async (req, res) => {
 app.post('/api/calculate', async (req, res) => {
   try {
     const gradesData = await loadGradesData();
-    const { grades = {}, targetGrade } = req.body;
+    const { grades = {}, targetGrade, modules } = req.body;
     const numericTargetGrade = Number.isFinite(Number(targetGrade)) ? Number(targetGrade) : 76;
-    res.json(buildResults(gradesData, grades, numericTargetGrade));
+
+    let calculationData = gradesData;
+    if (Array.isArray(modules)) {
+      const validationError = validateEditableModules(modules);
+      if (validationError) {
+        return res.status(400).json({ error: validationError });
+      }
+
+      calculationData = normalizeData({
+        year: gradesData.year,
+        modules
+      });
+    }
+
+    res.json(buildResults(calculationData, grades, numericTargetGrade));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
