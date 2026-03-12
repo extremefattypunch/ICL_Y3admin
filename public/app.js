@@ -794,20 +794,27 @@ function displayStoredDataResults(results) {
                         <p>The app tests every integer grade from 0 to 100 for all missing assessments. The first grade that reaches your desired final year grade is shown.</p>
                         <p><strong>Variables used:</strong></p>
                         <ul>
-                            <li><strong>\\(g\\)</strong>: one trial grade percentage (0 to 100) applied to every missing assessment.</li>
-                            <li><strong>\\(w_{known}\\)</strong>: assessment weight percentage for each assessment that already has a grade.</li>
-                            <li><strong>\\(w_{missing}\\)</strong>: assessment weight percentage for each missing assessment.</li>
-                            <li><strong>\\(S_m(g)\\)</strong>: module grade percentage for module \\(m\\) after filling missing assessments with \\(g\\).</li>
-                            <li><strong>\\(F(g)\\)</strong>: final year grade percentage after combining all module grades using module weight percentages.</li>
+                            <li><strong>\\(g\\)</strong>: trial grade percentage in brackets \\([0,100]\\), applied to every missing assessment.</li>
+                            <li><strong>\\(W_m\\)</strong>: module weight percentage for module \\(m\\).</li>
+                            <li><strong>\\(w_{m,k}\\)</strong>: assessment weight percentage for assessment \\(k\\) inside module \\(m\\).</li>
+                            <li><strong>\\(a_{m,k}\\)</strong>: known assessment grade percentage for assessment \\(k\\) in module \\(m\\).</li>
+                            <li><strong>\\(S_m(g)\\)</strong>: module grade percentage for module \\(m\\), after replacing missing assessments by \\(g\\).</li>
+                            <li><strong>\\(F(g)\\)</strong>: final year grade percentage from all module grades and module weights.</li>
                         </ul>
-                        <p class="calc-equation">$$S_m(g)=\\sum\\left(\\frac{w_{known}}{100}\\times grade_{known}\\right)+\\sum\\left(\\frac{w_{missing}}{100}\\times g\\right)$$</p>
-                        <p class="calc-equation">$$F(g)=\\sum\\left(\\frac{module\\_weight_m}{100}\\times S_m(g)\\right)$$</p>
-                        <p class="calc-equation">$$\\text{Choose the smallest integer }g\\in[0,100]\\text{ such that }F(g)\\ge target\\_grade-0.01$$</p>
+                        <p class="calc-equation">$$S_m(g)=\\sum_{k\\in K_m}\\left(\\frac{w_{m,k}}{100}a_{m,k}\\right)+\\sum_{k\\in M_m}\\left(\\frac{w_{m,k}}{100}g\\right)$$</p>
+                        <p class="calc-equation">$$F(g)=\\sum_m\\left(\\frac{W_m}{100}S_m(g)\\right)$$</p>
+                        <p class="calc-equation">$$g^*=\\min\\left\\{g\\in\\{0,1,2,\\ldots,100\\}:F(g)\\ge target\\_grade-0.01\\right\\}$$</p>
                         <p><strong>Sample calculation:</strong></p>
-                        <p>Suppose your desired final year grade is 77. Suppose the fully-known part of your current final grade is 42.6%, and missing assessments together contribute 45% of the final grade weighting.</p>
-                        <p class="calc-equation">$$F(g)=42.6+0.45g$$</p>
-                        <p class="calc-equation">$$42.6+0.45g\\ge77\\Rightarrow g\\ge\\frac{77-42.6}{0.45}=76.44$$</p>
-                        <p class="calc-equation">$$\\text{Minimum required average (integer)}=77$$</p>
+                        <p>Use two modules with explicit bracketed module-weight terms:</p>
+                        <p class="calc-equation">$$F(g)=\\left[\\frac{W_1}{100}S_1(g)\\right]+\\left[\\frac{W_2}{100}S_2(g)\\right]$$</p>
+                        <p>Let \\(W_1=60\\), \\(W_2=40\\), and desired final year grade \\(=77\\).</p>
+                        <p>Module 1: known assessments contribute \\(50\\%\\) at grade \\(72\\), missing assessments contribute \\(50\\%\\) at trial grade \\(g\\):</p>
+                        <p class="calc-equation">$$S_1(g)=\\left[\\frac{50}{100}\\cdot72\\right]+\\left[\\frac{50}{100}\\cdot g\\right]=36+0.5g$$</p>
+                        <p>Module 2: known assessments contribute \\(70\\%\\) at grade \\(68\\), missing assessments contribute \\(30\\%\\) at trial grade \\(g\\):</p>
+                        <p class="calc-equation">$$S_2(g)=\\left[\\frac{70}{100}\\cdot68\\right]+\\left[\\frac{30}{100}\\cdot g\\right]=47.6+0.3g$$</p>
+                        <p class="calc-equation">$$F(g)=\\left[\\frac{60}{100}(36+0.5g)\\right]+\\left[\\frac{40}{100}(47.6+0.3g)\\right]=40.64+0.42g$$</p>
+                        <p class="calc-equation">$$40.64+0.42g\\ge77\\Rightarrow g\\ge\\frac{77-40.64}{0.42}=86.57$$</p>
+                        <p class="calc-equation">$$g^*=87$$</p>
                     </div>
                     <p>This will help you reach a final year grade of ${results.targetGrade.toFixed(2)}</p>
                 </div>
