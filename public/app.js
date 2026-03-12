@@ -438,49 +438,30 @@ function submitGrades() {
         });
     });
 
-    // Send to server for calculation
-    fetch('/api/calculate', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            grades: grades,
-            targetGrade: targetGrade
-        })
-    })
-    .then(response => response.json())
-    .then(results => {
-        const saveRequests = Object.keys(grades)
-            .map(key => {
-                const [moduleCode, idx] = key.split('_');
-                return saveGrade(moduleCode, parseInt(idx, 10), grades[key]);
-            });
-
-        return Promise.all(saveRequests)
-            .then(() => {
-                document.getElementById('storedTargetGrade').value = targetGrade;
-                switchPage('stored');
-            });
-    })
-    .catch(error => {
-        console.error('Error calculating grades:', error);
-        alert('Failed to calculate grades. Please try again.');
-    });
+    // Save grades locally — works on Vercel without server-side persistence
+    localStorage.setItem('iclSavedGrades', JSON.stringify(grades));
+    localStorage.setItem('iclSavedTargetGrade', String(targetGrade));
+    document.getElementById('storedTargetGrade').value = targetGrade;
+    switchPage('stored');
 }
 
 // Load and display stored data
 function loadStoredData() {
     const targetGrade = parseFloat(document.getElementById('storedTargetGrade').value) || 77;
+    const savedGrades = JSON.parse(localStorage.getItem('iclSavedGrades') || '{}');
 
-    fetch(`/api/stored-data?target=${targetGrade}`)
-        .then(response => response.json())
-        .then(results => {
-            displayStoredDataResults(results);
-        })
-        .catch(error => {
-            console.error('Error loading stored data:', error);
-        });
+    fetch('/api/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grades: savedGrades, targetGrade: targetGrade })
+    })
+    .then(response => response.json())
+    .then(results => {
+        displayStoredDataResults({ ...results, targetGrade: targetGrade });
+    })
+    .catch(error => {
+        console.error('Error loading stored data:', error);
+    });
 }
 
 // Display stored data results
