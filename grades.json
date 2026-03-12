@@ -40,7 +40,7 @@
           "assessment_name": "Written report",
           "assessment_weight": 20,
           "description": "Literature highlights",
-          "grade": 73
+          "grade": null
         },
         {
           "assessment_name": "Presentation",
@@ -94,13 +94,13 @@
           "assessment_name": "Written exam",
           "assessment_weight": 82,
           "description": "Main exam",
-          "grade": 70
+          "grade": null
         },
         {
           "assessment_name": "Lab report",
           "assessment_weight": 18,
           "description": "Lab exercises",
-          "grade": 96
+          "grade": null
         }
       ]
     },
@@ -163,13 +163,13 @@
           "assessment_name": "Problem sheet",
           "assessment_weight": 10,
           "description": "Part 2: Stochastic Processes and Networks",
-          "grade": 100
+          "grade": null
         },
         {
           "assessment_name": "Problem sheet",
           "assessment_weight": 10,
           "description": "Part 3",
-          "grade": 100
+          "grade": null
         }
       ]
     },
@@ -199,7 +199,7 @@
           "assessment_name": "Written report",
           "assessment_weight": 20,
           "description": "Journal club",
-          "grade": 67
+          "grade": null
         },
         {
           "assessment_name": "Written exam",
